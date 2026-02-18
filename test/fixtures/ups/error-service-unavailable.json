@@ -1,0 +1,10 @@
+{
+  "response": {
+    "errors": [
+      {
+        "code": "500001",
+        "message": "An error occurred while processing your request. Please try again later."
+      }
+    ]
+  }
+}
