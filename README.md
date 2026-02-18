@@ -140,7 +140,7 @@ cp .env.example .env
 Set the following environment variables in `.env`:
 
 ```env
-# Required UPS credentials
+# UPS credentials (Optional - Mock mode will be used if not provided)
 UPS_CLIENT_ID=your_client_id_here
 UPS_CLIENT_SECRET=your_client_secret_here
 UPS_ACCOUNT_NUMBER=your_account_number
@@ -150,7 +150,44 @@ UPS_BASE_URL=https://onlinetools.ups.com
 UPS_OAUTH_URL=https://onlinetools.ups.com/security/v1/oauth/token
 UPS_API_VERSION=v2403
 UPS_TRANSACTION_SRC=carrier-integration-service
+
+# Mock Mode - Set to 'true' to use mock responses
+# Automatically enabled if credentials are missing
+# UPS_MOCK_MODE=false
 ```
+
+### 🎭 Mock Mode
+
+The service includes a **mock mode** for testing and development without requiring valid UPS API credentials:
+
+**Features:**
+
+- ✅ Returns realistic test data (3 UPS service quotes)
+- ✅ Zero network requests or API costs
+- ✅ Instant responses without OAuth flow
+- ✅ Perfect for demos and local development
+
+**Mock mode automatically enables when:**
+
+- Any UPS credential is missing (CLIENT_ID, CLIENT_SECRET, or ACCOUNT_NUMBER)
+- OR you explicitly set `UPS_MOCK_MODE=true` in `.env`
+
+**To use mock mode:**
+
+```bash
+# Option 1: Remove/comment out credentials in .env
+# UPS_CLIENT_ID=...
+# UPS_CLIENT_SECRET=...
+# UPS_ACCOUNT_NUMBER=...
+
+# Option 2: Explicitly enable mock mode
+UPS_MOCK_MODE=true
+
+# Run the CLI - you'll see "Running in MOCK MODE" message
+npm run start:cli
+```
+
+See [TESTING.md](TESTING.md) for comprehensive testing instructions.
 
 ### Running the Service
 
@@ -172,11 +209,22 @@ The CLI demo will:
 3. Make a sample rate request to UPS
 4. Display normalized rate quotes
 
-**Note**: Without valid UPS credentials, you'll see a `CarrierAuthError`. This demonstrates the structured error handling.
+**Note**: If mock mode is enabled, you'll see realistic test data without API calls. With valid credentials, you'll get real-time rates from UPS.
 
 ---
 
 ## 🧪 Testing
+
+**📖 For comprehensive testing instructions, see [TESTING.md](TESTING.md)**
+
+This includes:
+
+- Mock mode usage and configuration
+- Step-by-step CLI testing
+- Programmatic API usage examples
+- Testing different scenarios (success, errors, timeouts)
+- Environment configuration guide
+- HTTP endpoint setup (future)
 
 ### Run Tests
 
@@ -358,22 +406,11 @@ export class CarrierModule implements OnModuleInit {
 
 ## 🚧 Future Improvements
 
-Given more time, I would add:
+Given more time, I would add (ordered by priority):
 
-### 1. Additional Carriers
+### 1. Production Enhancements
 
-- **FedEx** (very similar to UPS)
-- **USPS** (different auth pattern)
-- **DHL** (international focus)
-
-### 2. Additional Operations
-
-- **Label Creation**: `createLabel(request: LabelRequest): Promise<LabelResponse>`
-- **Tracking**: `trackShipment(trackingNumber: string): Promise<TrackingResponse>`
-- **Address Validation**: `validateAddress(address: Address): Promise<ValidationResult>`
-- **Shipment Cancellation**: `cancelShipment(shipmentId: string): Promise<void>`
-
-### 3. Production Enhancements
+**Priority: 🔴 High**
 
 - **Database Caching**: Cache rate quotes for identical requests (Redis)
 - **Circuit Breaker**: Stop calling carriers that are repeatedly failing
@@ -383,19 +420,52 @@ Given more time, I would add:
 - **Webhook Support**: For tracking updates
 - **Batch Operations**: Submit multiple rate requests at once
 
-### 4. Developer Experience
+### 2. Advanced Error Handling
+
+**Priority: 🔴 High**
+
+- **Retry with backoff per error type**: Different strategies for network errors vs. rate limits
+- **Dead Letter Queue**: For failed requests that need manual intervention
+- **Error Aggregation**: Sentry/LogRocket integration
+- **Graceful Degradation**: If UPS is down, fallback to FedEx automatically
+
+### 3. Additional Operations
+
+**Priority: 🟡 Medium**
+
+- **Label Creation**: `createLabel(request: LabelRequest): Promise<LabelResponse>`
+- **Tracking**: `trackShipment(trackingNumber: string): Promise<TrackingResponse>`
+- **Address Validation**: `validateAddress(address: Address): Promise<ValidationResult>`
+- **Shipment Cancellation**: `cancelShipment(shipmentId: string): Promise<void>`
+
+### 4. Additional Carriers
+
+**Priority: 🟡 Medium**
+
+- **FedEx** (very similar to UPS)
+- **USPS** (different auth pattern)
+- **DHL** (international focus)
+
+### 5. Developer Experience
+
+**Priority: 🟢 Low**
 
 - **OpenAPI/Swagger**: Auto-generated API docs if we expose REST endpoints
 - **CLI Tool**: Robust CLI with commands like `carrier-cli rate --from=GA --to=NY --weight=5`
 - **Docker**: Containerized deployment
 - **Helm Chart**: Kubernetes deployment
 
-### 5. Advanced Error Handling
+---
 
-- **Retry with backoff per error type**: Different strategies for network errors vs. rate limits
-- **Dead Letter Queue**: For failed requests that need manual intervention
-- **Error Aggregation**: Sentry/LogRocket integration
-- **Graceful Degradation**: If UPS is down, fallback to FedEx automatically
+### 📊 Priority Summary
+
+| Priority      | Feature                 | Why                                                                    | Estimated Effort   |
+| ------------- | ----------------------- | ---------------------------------------------------------------------- | ------------------ |
+| 🔴 **High**   | Production Enhancements | Critical for scalability, reliability, and observability in production | Medium (2-3 weeks) |
+| 🔴 **High**   | Advanced Error Handling | Essential for fault tolerance and operational stability                | Medium (1-2 weeks) |
+| 🟡 **Medium** | Additional Operations   | Extends core functionality, high business value                        | High (3-4 weeks)   |
+| 🟡 **Medium** | Additional Carriers     | Increases market coverage and redundancy                               | Medium (2-3 weeks) |
+| 🟢 **Low**    | Developer Experience    | Improves DX but not critical for core functionality                    | Low (1 week)       |
 
 ---
 
@@ -526,21 +596,3 @@ try {
 ```
 
 ---
-
-## 📝 License
-
-MIT
-
----
-
-## 👤 Author
-
-Built for Cybership as a take-home assessment demonstrating production-quality TypeScript architecture.
-
----
-
-## 🙏 Acknowledgments
-
-- UPS Developer API Documentation: https://developer.ups.com/tag/Rating
-- NestJS Documentation: https://docs.nestjs.com
-- Zod Documentation: https://zod.dev
