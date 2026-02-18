@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { HttpModule, HttpService } from '@nestjs/axios';
 import { ConfigModule } from '@nestjs/config';
 import { of, throwError } from 'rxjs';
+import { delay } from 'rxjs/operators';
 import { AxiosResponse, AxiosError } from 'axios';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { UpsAuthService } from '../ups-auth.service';
@@ -13,6 +14,7 @@ import tokenFixture from '../../../../test/fixtures/ups/auth-token-response.json
 process.env.UPS_CLIENT_ID = 'test_client_id';
 process.env.UPS_CLIENT_SECRET = 'test_client_secret';
 process.env.UPS_ACCOUNT_NUMBER = 'TEST123';
+process.env.UPS_MOCK_MODE = 'false';
 
 describe('UpsAuthService', () => {
   let service: UpsAuthService;
@@ -32,13 +34,22 @@ describe('UpsAuthService', () => {
 
     service = module.get<UpsAuthService>(UpsAuthService);
     httpService = module.get<HttpService>(HttpService);
+
+    // Clear all mocks before each test
+    vi.clearAllMocks();
   });
 
   describe('getToken', () => {
     it('should acquire and return a valid token', async () => {
+      // Use current time for issued_at to ensure token is not expired
+      const freshTokenData = {
+        ...tokenFixture,
+        issued_at: String(Date.now()),
+      };
+
       // Mock successful token response
       const mockResponse: AxiosResponse = {
-        data: tokenFixture,
+        data: freshTokenData,
         status: 200,
         statusText: 'OK',
         headers: {},
@@ -63,8 +74,14 @@ describe('UpsAuthService', () => {
     });
 
     it('should cache and reuse valid tokens', async () => {
+      // Use current time for issued_at to ensure token is not expired
+      const freshTokenData = {
+        ...tokenFixture,
+        issued_at: String(Date.now()),
+      };
+
       const mockResponse: AxiosResponse = {
-        data: tokenFixture,
+        data: freshTokenData,
         status: 200,
         statusText: 'OK',
         headers: {},
@@ -127,20 +144,24 @@ describe('UpsAuthService', () => {
     });
 
     it('should handle concurrent requests with mutex', async () => {
+      // Use current time for issued_at to ensure token is not expired
+      const freshTokenData = {
+        ...tokenFixture,
+        issued_at: String(Date.now()),
+      };
+
       const mockResponse: AxiosResponse = {
-        data: tokenFixture,
+        data: freshTokenData,
         status: 200,
         statusText: 'OK',
         headers: {},
         config: {} as any,
       };
 
-      // Add delay to simulate slow API
-      const postSpy = vi.spyOn(httpService, 'post').mockImplementation(() => {
-        return new Promise((resolve) => {
-          setTimeout(() => resolve(of(mockResponse).toPromise()), 100);
-        }) as any;
-      });
+      // Add delay to simulate slow API using rxjs delay operator
+      const postSpy = vi
+        .spyOn(httpService, 'post')
+        .mockReturnValue(of(mockResponse).pipe(delay(100)));
 
       // Make 3 concurrent requests
       const [token1, token2, token3] = await Promise.all([
@@ -174,8 +195,14 @@ describe('UpsAuthService', () => {
     });
 
     it('should invalidate token on demand', async () => {
+      // Use current time for issued_at to ensure token is not expired
+      const freshTokenData = {
+        ...tokenFixture,
+        issued_at: String(Date.now()),
+      };
+
       const mockResponse: AxiosResponse = {
-        data: tokenFixture,
+        data: freshTokenData,
         status: 200,
         statusText: 'OK',
         headers: {},

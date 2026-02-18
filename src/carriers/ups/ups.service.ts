@@ -97,7 +97,7 @@ export class UpsService implements CarrierAdapter {
   /**
    * Execute the actual rate request (separated for retry logic)
    */
-  private async executeRateRequest(request: RateRequest): Promise<RateResponse> {
+  private async executeRateRequest(request: RateRequest, retryCount = 0): Promise<RateResponse> {
     try {
       // Get auth token
       const token = await this.authService.getToken();
@@ -143,9 +143,18 @@ export class UpsService implements CarrierAdapter {
       // Map UPS response to domain response
       return UpsMapper.fromUpsRateResponse(response.data, transactionId);
     } catch (error) {
-      // Handle auth errors by invalidating token and retrying once
-      if (this.isAuthError(error)) {
+      // Don't wrap our own structured errors
+      if (error instanceof CarrierResponseParseError) {
+        throw error;
+      }
+
+      // Handle 401 auth errors with retry
+      if (this.isAuthError(error) && retryCount === 0) {
+        // Invalidate cached token
         this.authService.invalidate();
+
+        // Retry once with fresh token
+        return this.executeRateRequest(request, 1);
       }
 
       // Map and re-throw as structured error

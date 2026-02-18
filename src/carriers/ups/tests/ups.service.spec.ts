@@ -23,6 +23,7 @@ import errorServiceUnavailableFixture from '../../../../test/fixtures/ups/error-
 process.env.UPS_CLIENT_ID = 'test_client_id';
 process.env.UPS_CLIENT_SECRET = 'test_client_secret';
 process.env.UPS_ACCOUNT_NUMBER = 'TEST123';
+process.env.UPS_MOCK_MODE = 'false';
 
 describe('UpsService', () => {
   let service: UpsService;
