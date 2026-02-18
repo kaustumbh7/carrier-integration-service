@@ -44,6 +44,11 @@ export class UpsAuthService {
    * @returns Valid Bearer token
    */
   async getToken(): Promise<string> {
+    // Return mock token if in mock mode
+    if (this.config.mockMode) {
+      return 'mock_token_12345';
+    }
+
     // Return cached token if still valid
     if (this.cachedToken && this.isTokenValid()) {
       return this.cachedToken;

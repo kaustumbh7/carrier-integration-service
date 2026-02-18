@@ -13,6 +13,7 @@ import { UpsMapper } from './ups.mapper';
 import { UpsRateResponse } from './ups.types';
 import upsConfig from './ups.config';
 import { DEFAULT_REQUEST_OPTION } from './ups.constants';
+import rateShopFixture from '../../../test/fixtures/ups/rate-shop-response.json';
 
 /**
  * Zod schema for UPS rate response validation
@@ -63,7 +64,7 @@ export class UpsService implements CarrierAdapter {
    * @returns Normalized rate quotes
    */
   async getRates(request: RateRequest): Promise<RateResponse> {
-    // Validate request against schema
+    // Validate request against schema (even in mock mode)
     const validationResult = RateRequestSchema.safeParse(request);
     if (!validationResult.success) {
       throw new CarrierValidationError(
@@ -73,6 +74,11 @@ export class UpsService implements CarrierAdapter {
         400,
         { errors: validationResult.error.errors },
       );
+    }
+
+    // Return mock data if in mock mode
+    if (this.config.mockMode) {
+      return UpsMapper.fromUpsRateResponse(rateShopFixture as any, uuidv4());
     }
 
     // Use retry wrapper for transient failures

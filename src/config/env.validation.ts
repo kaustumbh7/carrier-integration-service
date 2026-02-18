@@ -10,14 +10,21 @@ export const EnvSchema = z.object({
   // Logging
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
 
-  // UPS Configuration
-  UPS_CLIENT_ID: z.string().min(1, 'UPS_CLIENT_ID is required'),
-  UPS_CLIENT_SECRET: z.string().min(1, 'UPS_CLIENT_SECRET is required'),
-  UPS_ACCOUNT_NUMBER: z.string().min(1, 'UPS_ACCOUNT_NUMBER is required'),
+  // UPS Configuration (credentials are optional - will use mock mode if missing)
+  UPS_CLIENT_ID: z.string().min(1).optional(),
+  UPS_CLIENT_SECRET: z.string().min(1).optional(),
+  UPS_ACCOUNT_NUMBER: z.string().min(1).optional(),
   UPS_BASE_URL: z.string().url().default('https://onlinetools.ups.com'),
   UPS_OAUTH_URL: z.string().url().default('https://onlinetools.ups.com/security/v1/oauth/token'),
   UPS_API_VERSION: z.string().default('v2403'),
   UPS_TRANSACTION_SRC: z.string().default('carrier-integration-service'),
+
+  // UPS Mock Mode - Set to 'true' to use mock responses instead of real API calls
+  UPS_MOCK_MODE: z
+    .string()
+    .optional()
+    .transform((val) => val === 'true')
+    .default('false'),
 });
 
 export type Environment = z.infer<typeof EnvSchema>;

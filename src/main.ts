@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { RatingService } from './carrier';
 import { RateRequest } from './domain';
@@ -17,10 +18,17 @@ async function bootstrap() {
 
     // Get rating service from DI container
     const ratingService = app.get(RatingService);
+    const configService = app.get(ConfigService);
 
     // Display available carriers
     const carriers = ratingService.getAvailableCarriers();
     console.log(`✓ Available carriers: ${carriers.join(', ')}\n`);
+
+    // Check if UPS is running in mock mode
+    const upsMockMode = configService.get<boolean>('ups.mockMode');
+    if (upsMockMode) {
+      console.log('ℹ️  Running in MOCK MODE (no real API calls will be made)\n');
+    }
 
     // Example rate request
     const demoRequest: RateRequest = {
